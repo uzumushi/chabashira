@@ -32,7 +32,7 @@ void CLIENT_SOCKET::setAddr(int port,const char* ip_addr){
 
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
-	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	addr.sin_addr.s_addr = inet_addr(ip_addr);
 }
 
 /* get socket */

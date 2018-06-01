@@ -10,9 +10,9 @@
 #include "./PicoSHA2/picosha2.h"
 #include "client_socket.h"
 
-const int PORTNUM = 50000;
+const int PORTNUM = 50500;
 const char SERVER_IP[] = "160.12.172.211"; //pi
-const int CAPACITY = 1;
+const int CAPACITY = 20000;
 const int BLOCK_NUM = 10;
 bool flag = 0;
 
@@ -71,6 +71,7 @@ int main(void){
     printf("Master Message : %s\n", socket.getBuff());
 
     //send capacity
+    cout << to_string(CAPACITY) <<endl;
     socket.sendSocket(to_string(CAPACITY));
 
     //get rangeof rand

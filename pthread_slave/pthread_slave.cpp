@@ -11,8 +11,8 @@
 
 using namespace std;
 
-const int PORTNUM = 10050;
-const char SERVER_IP[] = "127.0.0.1";
+const int PORTNUM = 50500;
+const char SERVER_IP[] = "160.12.172.211";
 const int CAPACITY = 1;
 const int THREAD_NUM = 16;
 const int DEFAULT_BLOCK_NUM = 10;
@@ -71,7 +71,8 @@ int main(int argc,char** argv){
         printError(__LINE__);
         return -1;
     }
-
+    sock.sendSocket("wittgenstein");    
+    
     //get connection mes from server
     if(sock.readSocket() == -1){
         printError(__LINE__);
@@ -108,6 +109,7 @@ int main(int argc,char** argv){
 	        printError(__LINE__);
 	        return -1;
 	    }
+        cout << "data : " << sock.getBuff() << endl;
         header = sock.getBuff();
 
         //make calcration threads
@@ -153,6 +155,7 @@ void *hash_calculation(void * t_data){
     pthread_mutex_lock( &mutex);
     if(f_finish == false){
         sock.sendSocket(nonce);
+        cout << nonce << endl;
         f_finish = true;
     }
     pthread_mutex_unlock( &mutex);
@@ -162,6 +165,13 @@ void *finish_mes_reciever(void* ptr){
     if(sock.readSocket()==-1){
         printError(__LINE__);
         exit(-1);
+               
     }
-    f_finish = true;
+    
+    pthread_mutex_lock( &mutex);
+    if(f_finish == false){
+        sock.sendSocket("calc stop");
+        f_finish = true;
+    }
+    pthread_mutex_unlock( &mutex);
 }
