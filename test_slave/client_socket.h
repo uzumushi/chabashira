@@ -15,6 +15,7 @@ public:
 	void setAddr(int,const char*);
 	bool connectSocket();
 	int readSocket();
+	int getSocket(); // add by tomoya
 	bool sendSocket(std::string);
 	bool sendSocket(const char*);
 	const char* getBuff();
