@@ -11,16 +11,9 @@
 #include "client_socket.h"
 
 const int PORTNUM = 50000;
-<<<<<<< HEAD
 const char SERVER_IP[] = "160.12.172.211"; //pi
 const int CAPACITY = 1;
 const int BLOCK_NUM = 10;
-=======
-const char SERVER_IP[] = "127.0.0.1";
-const int CAPACITY = 1;
-const int BLOCK_NUM = 10;
-const char READY[] = "ready";
->>>>>>> 36f6702b873807fb342b17f31385499c6215c87e
 bool flag = 0;
 
 using namespace std;
@@ -61,11 +54,7 @@ int main(void){
     mt19937 mt(rnd());
     
     //make socket connection
-<<<<<<< HEAD
 	printf("PORTNUM is %d\n", PORTNUM); // for Debug
-=======
-	cout << "PORTNUM is " << PORTNUM << endl; // for Debug
->>>>>>> 36f6702b873807fb342b17f31385499c6215c87e
     if(!socket.connectSocket()){
         printError(__LINE__);
         return -1;
@@ -79,11 +68,7 @@ int main(void){
         printError(__LINE__);
         return -1;
     }
-<<<<<<< HEAD
     printf("Master Message : %s\n", socket.getBuff());
-=======
-    cout << "Master Message :" << socket.getBuff() <<endl;
->>>>>>> 36f6702b873807fb342b17f31385499c6215c87e
 
     //send capacity
     socket.sendSocket(to_string(CAPACITY));
@@ -93,11 +78,7 @@ int main(void){
         printError(__LINE__);
         return -1;
     }
-<<<<<<< HEAD
     printf("Range : %s\n", socket.getBuff());
-=======
-    cout << "Range :" << socket.getBuff()<<endl;
->>>>>>> 36f6702b873807fb342b17f31385499c6215c87e
     istringstream iss(socket.getBuff());
     unsigned rand_begin,rand_end;
     iss >> rand_begin >> rand_end;
@@ -116,31 +97,17 @@ int main(void){
 	///// Nonce Culculate /////
 
     for(int i=0; i<BLOCK_NUM; i++){
-<<<<<<< HEAD
 		puts("================ START NONCE CALCULATION ==============");
 		printf("Now : %d\n", i+1); // for Debug
 		//flag reset
 		flag = 0;
-=======
-		cout << "================ START NONCE CALCULATION ==============" << endl;
-		cout << "Now : " << i + 1 << endl; // for Debug
-		//flag reset
-		flag = 0;
-		////send ready message
-		//socket.sendSocket(READY);
-		//cout << "I send READY!" << endl;
->>>>>>> 36f6702b873807fb342b17f31385499c6215c87e
 
 	    //get block data
 	    if(socket.readSocket()==-1){
 	        printError(__LINE__);
 	        return -1;
 	    }
-<<<<<<< HEAD
 		printf("Block : %s\n", socket.getBuff()); // for Debug
-=======
-		cout << "Block :" << socket.getBuff() << endl; // for Debug
->>>>>>> 36f6702b873807fb342b17f31385499c6215c87e
 
 		/* create thread for getting message another slave got nonce */
 		int sock = socket.getSocket();
@@ -169,7 +136,6 @@ int main(void){
 			if (flag == 1){
 				break;
 			}
-<<<<<<< HEAD
 
 	    }while(checkContinuousZeros(double_hash.c_str(),n_zeros)==false);
 
@@ -195,27 +161,6 @@ int main(void){
 	if (socket.readSocket() == -1){
 		printError(__LINE__);
 		return -1;
-=======
-
-	    }while(checkContinuousZeros(double_hash.c_str(),n_zeros)==false);
-
-		/* join thread */
-		cout << "My flag is " << flag << endl; // for Debug
-		if (flag == 0) {
-			pthread_cancel(thread_id); // thread cancel
-
-			cout << "nonce : " << nonce << endl;
-			cout << "hash  : " << double_hash << endl;
-
-			socket.sendSocket(nonce);
-		}
-		else if (flag == 1) {
-			flag = 0;
-			cout << "I changed flag 0" << endl;
-			cout << "I didn't make a new nonce" << endl;
-		}
-		pthread_join(thread_id, NULL);
->>>>>>> 36f6702b873807fb342b17f31385499c6215c87e
 	}
 	puts(socket.getBuff()); //for Debug
 
@@ -230,20 +175,6 @@ void *get_message_interruption(void *thread_data){
 	read(*sock, buff, sizeof(buff));
 	printf("From Master : %s\n", buff); //for Debug
 
-	write(*sock, "OK, I stopped.", sizeof("OK, I stopped.") + 1);
-	flag = 1;
-
-	cout << "FINISH!" << endl; // for Debug
-
-	return 0;
-}
-
-/* This is interruption function */
-void *get_message_interruption(void *thread_data){
-	char buff[BUFF_SIZE];
-	int *sock = (int *)thread_data;
-	read(*sock, buff, sizeof(buff));
-	cout << "From Master :" << buff << endl;
 	write(*sock, "OK, I stopped.", sizeof("OK, I stopped.") + 1);
 	flag = 1;
 
