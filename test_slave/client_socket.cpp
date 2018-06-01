@@ -31,8 +31,13 @@ void CLIENT_SOCKET::initSocket(){
 void CLIENT_SOCKET::setAddr(int port,const char* ip_addr){
 
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(10050);
+	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+}
+
+/* get socket */
+int CLIENT_SOCKET::getSocket(){
+	return sock;
 }
 
 //connect to server
@@ -45,6 +50,7 @@ bool CLIENT_SOCKET::connectSocket(){
 
 //get from server
 int CLIENT_SOCKET::readSocket(){
+	memset(buff, 0, sizeof(buff)); // èâä˙âª
  	return read(sock, buff, sizeof(buff));
 }
 
