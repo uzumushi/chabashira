@@ -13,7 +13,7 @@ using namespace std;
 
 const int PORTNUM = 50500;
 const char SERVER_IP[] = "160.12.172.211";
-const int CAPACITY = 1;
+const int DEFAULT_CAPACITY = 170000;
 const int THREAD_NUM = 16;
 const int DEFAULT_BLOCK_NUM = 10;
 
@@ -64,7 +64,8 @@ int main(int argc,char** argv){
     pthread_t reciever_id;
     int block_num;
 
-    block_num = argc>2 ? atoi(argv[1]):DEFAULT_BLOCK_NUM;
+    int capacity = argc>2 ? atoi(argv[1]):DEFAULT_CAPACITY;
+    block_num = argc>3 ? atoi(argv[2]):DEFAULT_BLOCK_NUM;
     
     //make socket connection
     if(!sock.connectSocket()){
@@ -81,7 +82,7 @@ int main(int argc,char** argv){
     cout << sock.getBuff() <<endl;
 
     //send capacity
-    sock.sendSocket(to_string(CAPACITY));
+    sock.sendSocket(to_string(capacity));
 
     //get rangeof rand
     if(sock.readSocket()==-1){
@@ -167,7 +168,7 @@ void *finish_mes_reciever(void* ptr){
         exit(-1);
                
     }
-    
+
     pthread_mutex_lock( &mutex);
     if(f_finish == false){
         sock.sendSocket("calc stop");
