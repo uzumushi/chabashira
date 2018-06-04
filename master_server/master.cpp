@@ -18,18 +18,21 @@ const char SERVER_IP[]="160.12.172.43"; //giren
 const int SERVER_PORT = 10050;
 const int PORT = 50000;
 const char TEAM_NAME[] = "Chabashira";
-const int N_SLAVE = 3;
-const int BLOCK_NUM = 10;
+const int DEFAULT_N_SLAVE = 3;
+const int DEFAULT_BLOCK_NUM = 10;
 const char TO_SLAVE_MES[] = "Stop Calculation!";
+
+int BLOCK_NUM;
+int N_SLAVE;
 
 CLIENT_SOCKET server_sock(SERVER_PORT,SERVER_IP);
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond;
 
 unsigned capacity_total = 0;
-unsigned capacity[N_SLAVE];
-unsigned RandRange[N_SLAVE];
-int client_sock[N_SLAVE]; //from main function
+unsigned *capacity;
+unsigned *RandRange;
+int* client_sock; //from main function
  
 string block_data;
 int n_zeros = 0;
@@ -52,8 +55,16 @@ int main(int argc , char *argv[])
 {
     int socket_desc , c;
     struct sockaddr_in server , client;
-    THREAD_DATA thread_data[N_SLAVE];
+    THREAD_DATA* thread_data;
  
+    N_SLAVE   = argc > 2 ? atoi(argv[1]):DEFAULT_N_SLAVE; 
+    BLOCK_NUM = argc > 3 ? atoi(argv[2]):DEFAULT_BLOCK_NUM;
+
+    capacity = new unsigned[N_SLAVE];
+    RandRange = new unsigned[N_SLAVE];
+    client_sock = new int[N_SLAVE];
+    thread_data = new THREAD_DATA[N_SLAVE];
+
 	//initialize mutex and cond
     pthread_mutex_init(&mutex, NULL);
     pthread_cond_init(&cond, NULL);
@@ -189,6 +200,9 @@ int main(int argc , char *argv[])
 	}
 
     puts(server_sock.getBuff()); //for Debug
+    delete[] capacity;
+    delete[] RandRange;
+    delete[] client_sock;
 
     return 0;
 }
