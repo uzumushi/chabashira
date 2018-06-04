@@ -59,11 +59,11 @@ const char* CLIENT_SOCKET::getBuff(){
 }
 
 bool CLIENT_SOCKET::sendSocket(string message){
-	sendto(sock, message.c_str(), message.size()+1, 0,(struct sockaddr*)&addr,sizeof(addr));
+	return sendto(sock, message.c_str(), message.size()+1, 0,(struct sockaddr*)&addr,sizeof(addr));
 }
 
 bool CLIENT_SOCKET::sendSocket(const char* message){
-	sendto(sock, message, strlen(message)+1, 0,(struct sockaddr*)&addr,sizeof(addr));
+	return sendto(sock, message, strlen(message)+1, 0,(struct sockaddr*)&addr,sizeof(addr));
 }
 
 void CLIENT_SOCKET::closeSocket(){

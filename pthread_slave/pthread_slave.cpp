@@ -14,7 +14,7 @@ using namespace std;
 const int PORTNUM = 50500;
 const char SERVER_IP[] = "160.12.172.211";
 const int DEFAULT_CAPACITY = 170000;
-const int THREAD_NUM = 16;
+const int THREAD_NUM = 8;
 const int DEFAULT_BLOCK_NUM = 10;
 
 void *hash_calculation(void *);
@@ -161,6 +161,7 @@ void *hash_calculation(void * t_data){
         f_finish = true;
     }
     pthread_mutex_unlock( &mutex);
+    return NULL;
 }
 
 void *finish_mes_reciever(void* ptr){
@@ -176,4 +177,5 @@ void *finish_mes_reciever(void* ptr){
         f_finish = true;
     }
     pthread_mutex_unlock( &mutex);
+    return NULL;
 }

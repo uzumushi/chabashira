@@ -10,7 +10,7 @@
 
 using namespace std;
 
-const int THREAD_NUM = 16;
+const int THREAD_NUM = 8;
 const int DEFAULT_BLOCK_NUM = 10;
 
 void *hash_calculation(void *);
@@ -116,6 +116,7 @@ void *hash_calculation(void * t_data){
         f_finish = true;
     }
     pthread_mutex_unlock( &mutex);
+  return NULL;
 }
 
 void *timer(void* ptr){
@@ -126,4 +127,5 @@ void *timer(void* ptr){
         f_finish = true;
     }
     pthread_mutex_unlock( &mutex);
+  return NULL;
 }
