@@ -66,10 +66,10 @@ int main(int argc,char** argv){
 
         header = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
         
-            if( pthread_create( &reciever_id , NULL ,  timer , (void*) &thread_data[i]) < 0){
-                perror("could not create thread");
-                return -1;
-            }   
+        if( pthread_create( &reciever_id , NULL ,  timer , (void*) &thread_data[i]) < 0){
+            perror("could not create thread");
+            return -1;
+        }   
 
         //make calcration threads
         for(int i=0;i<THREAD_NUM ;i++){

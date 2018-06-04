@@ -148,9 +148,9 @@ void *hash_calculation(void * t_data){
         ostringstream os;
         os<< hex << setw(8) <<setfill('0')<< nonce_value;
         nonce = os.str();
-
         string block = header + nonce;
-        getDoubleHash(header,double_hash);
+        getDoubleHash(block,double_hash);
+        nonce_value++;
     }while(checkContinuousZeros(double_hash.c_str(),n_zeros)==false && !f_finish);
 
     pthread_mutex_lock( &mutex);
