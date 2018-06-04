@@ -115,6 +115,7 @@ int main(int argc,char** argv){
 
         //make calcration threads
         for(int i=0;i<THREAD_NUM ;i++){
+            thread_data[i].id = i;
             if( pthread_create( &thread_id[i] , NULL ,  hash_calculation , (void*) &thread_data[i]) < 0){
                 perror("could not create thread");
                 return -1;
