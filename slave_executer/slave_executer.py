@@ -6,7 +6,7 @@ import os
 #change here
 host = "160.12.172.3" #server_IP(now deep)
 port = 55555 #same with client program
-slave_path = "/home/fss3/tomoya/test_slave" #execute slave program path
+slave_path = "../pthread_slave/slave"#execute slave program path
 CSV_PATH = "capacity.csv"
 
 data = []
