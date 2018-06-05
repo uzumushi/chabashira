@@ -45,9 +45,9 @@ while(True):
 		if cmd_lst[1] == "all":
     			print "I'm all!" #for Debug
 			for slave in data_dict.values():
-				send_mes(slave,mes)
 				print slave #for Debug
 				print mes #for Debug
+				send_mes(slave,mes)
 
 			continue
 

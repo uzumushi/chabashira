@@ -56,8 +56,8 @@ int main(int argc , char *argv[])
     struct sockaddr_in server , client;
     THREAD_DATA* thread_data;
  
-    N_SLAVE   = argc > 2 ? atoi(argv[1]):DEFAULT_N_SLAVE; 
-    BLOCK_NUM = argc > 3 ? atoi(argv[2]):DEFAULT_BLOCK_NUM;
+    N_SLAVE   = argc >= 2 ? atoi(argv[1]):DEFAULT_N_SLAVE; 
+    BLOCK_NUM = argc >= 3 ? atoi(argv[2]):DEFAULT_BLOCK_NUM;
 
     capacity = new unsigned[N_SLAVE];
     RandRange = new unsigned[N_SLAVE];
