@@ -14,18 +14,17 @@
 
 using namespace std;
 
-const char SERVER_IP[]="160.12.172.211"; //server IP(now pi)
-const int SERVER_PORT = 10050;
+
 const int PORT = 50000;
 const char TEAM_NAME[] = "Chabashira";
 const int DEFAULT_N_SLAVE = 3;
 const int DEFAULT_BLOCK_NUM = 10;
 const char TO_SLAVE_MES[] = "Stop Calculation!";
 
+CLIENT_SOCKET* server_sock;
 int BLOCK_NUM;
 int N_SLAVE;
 
-CLIENT_SOCKET server_sock(SERVER_PORT,SERVER_IP);
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond;
 
@@ -64,6 +63,16 @@ int main(int argc , char *argv[])
     RandRange = new unsigned[N_SLAVE];
     client_sock = new int[N_SLAVE];
     thread_data = new THREAD_DATA[N_SLAVE];
+
+    string SERVER_IP; //server IP(now pi)
+    int SERVER_PORT;
+
+    cout << "input server IP addr"<<endl;
+    cin  >> SERVER_IP;
+    cout << "input server port" <<endl;
+    cin  >> SERVER_PORT;
+
+    server_sock = new CLIENT_SOCKET(SERVER_PORT,SERVER_IP.c_str());
 
 	//initialize mutex and cond
     pthread_mutex_init(&mutex, NULL);
@@ -141,23 +150,23 @@ int main(int argc , char *argv[])
 	puts("================= SERVER CONNECTION ==================");
 
     //connect to server
-    server_sock.connectSocket();
-    if(server_sock.readSocket() == -1){
+    server_sock->connectSocket();
+    if(server_sock->readSocket() == -1){
         perror("server connection error");
         return -1;
     }
-    printf("Server Message : %s\n", server_sock.getBuff());
+    printf("Server Message : %s\n", server_sock->getBuff());
 
     //send team name
-    server_sock.sendSocket(TEAM_NAME);
+    server_sock->sendSocket(TEAM_NAME);
 
     //get number of continuous zeros
-    if(server_sock.readSocket() == -1){
+    if(server_sock->readSocket() == -1){
         perror("server connection error");
         return -1;
     }
-    printf("Number of continuous zeros : %s\n", server_sock.getBuff());
-    n_zeros = atoi(server_sock.getBuff());
+    printf("Number of continuous zeros : %s\n", server_sock->getBuff());
+    n_zeros = atoi(server_sock->getBuff());
     pthread_cond_broadcast(&cond); // bloadcast continuous zeros
 
 	puts("================= START CALCULATION (LOOP SECTION) ==================");
@@ -173,11 +182,11 @@ int main(int argc , char *argv[])
 		}
 
         //get blockdata
-        if(server_sock.readSocket() == -1){
+        if(server_sock->readSocket() == -1){
             perror("server connection error");
             return -1;
         }
-        block_data = server_sock.getBuff();
+        block_data = server_sock->getBuff();
 		printf("Block : %s\n", block_data.c_str());
 
 		flag = 0; // flag reset
@@ -188,7 +197,7 @@ int main(int argc , char *argv[])
     }
 
 	//get finish message from server
-	if (server_sock.readSocket() == -1){
+	if (server_sock->readSocket() == -1){
 		perror("server finish error");
 		return -1;
 	}
@@ -199,12 +208,12 @@ int main(int argc , char *argv[])
         printf("FINISH Join thread is %x\n", &thread_id[i]); // for Debug
 	}
 
-    puts(server_sock.getBuff()); //for Debug
+    puts(server_sock->getBuff()); //for Debug
     delete[] capacity;
     delete[] RandRange;
     delete[] client_sock;
 
-    server_sock.closeSocket();
+    server_sock->closeSocket();
     close(socket_desc);
     return 0;
 }
@@ -283,7 +292,7 @@ void *connection_handler_execute(void *thread_data){
 			printf("I am %d thread! And Now ans_count is %d.\n", id, ans_count+1); //for Debug
 			printf("Recv Answer : %s (id = %d)\n", client_message, id); //for Debug
 
-			server_sock.sendSocket(client_message);
+			server_sock->sendSocket(client_message);
 			printf("I sent %s\n", client_message); //for Debug
 
 			for (int i = 0; i < N_SLAVE; i++){
