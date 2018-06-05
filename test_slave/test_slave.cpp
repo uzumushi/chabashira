@@ -12,8 +12,8 @@
 
 const int PORTNUM = 50500;
 const char SERVER_IP[] = "160.12.172.211"; //pi
-const int CAPACITY = 20000;
-const int BLOCK_NUM = 10;
+const int CAPACITY; //get from argument
+const int BLOCK_NUM; //get from argument
 bool flag = 0;
 
 using namespace std;
@@ -42,7 +42,17 @@ void getDoubleHash(string& header,string& double_hash){
     picosha2::hash256_hex_string(header_hash, double_hash);
 }
 
-int main(void){
+int main(int argc, char* argv[]){
+    //argument check
+    if(argc != 3){
+      printError(__LINE__);
+      return -1;
+    }
+
+    //set capacity and block_num
+    CAPACITY = atoi(argv[1]);
+    BLOCK_NUM = atoi(argv[2]);
+
     CLIENT_SOCKET socket(PORTNUM,SERVER_IP);//socket for server connection
     int n_zeros;//condition of continuous zeros
     string nonce;//for nonce

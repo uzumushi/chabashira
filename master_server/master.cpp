@@ -14,7 +14,7 @@
 
 using namespace std;
 
-const char SERVER_IP[]="160.12.172.43"; //giren
+const char SERVER_IP[]="160.12.172.211"; //server IP(now pi)
 const int SERVER_PORT = 10050;
 const int PORT = 50000;
 const char TEAM_NAME[] = "Chabashira";
@@ -47,7 +47,7 @@ void *recv_ready_message(void *);
 
 struct THREAD_DATA{
     int id;
-	char client_name[BUFF_SIZE];
+    char client_name[BUFF_SIZE];
     int client_sock;
 };
 
@@ -204,6 +204,8 @@ int main(int argc , char *argv[])
     delete[] RandRange;
     delete[] client_sock;
 
+    server_sock.closeSocket();
+    close(socket_desc);
     return 0;
 }
  
@@ -235,7 +237,7 @@ void *connection_handler_initial(void *thread_data)
     pthread_mutex_lock(&mutex);
     capacity_total += capacity[id];
     pthread_mutex_unlock(&mutex);
-         
+     
     return 0;
 } 
 
