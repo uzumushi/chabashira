@@ -9,70 +9,79 @@
 #include <string>
 #include <unistd.h>
 #include <cuda.h>
-#include "sha256.cuh"
+#include "sha256_revision.cuh"
 #include <dirent.h>
 #include <ctype.h>
 
-char * trim(char *str){
-    size_t len = 0;
-    char *frontp = str;
-    char *endp = NULL;
+#define THREAD_TOTAL 1052
 
-    if( str == NULL ) { return NULL; }
-    if( str[0] == '\0' ) { return str; }
+dim3 grid_num(6);
+dim3 block_num(192);
+  
 
-    len = strlen(str);
-    endp = str + len;
+__device__ bool checkContinuousZeros(const char* str,int n_zeros){
 
-    /* Move the front and back pointers to address the first non-whitespace
-     * characters from each end.
-     */
-    while( isspace((unsigned char) *frontp) ) { ++frontp; }
-    if( endp != frontp )
-    {
-        while( isspace((unsigned char) *(--endp)) && endp != frontp ) {}
+    for (int i = 0; i < n_zeros; ++i){
+        if(str[i] != '0')
+            return false;
     }
 
-    if( str + len - 1 != endp )
-            *(endp + 1) = '\0';
-    else if( frontp != str &&  endp == frontp )
-            *str = '\0';
-
-    /* Shift the string so that it starts at str so that if it's dynamically
-     * allocated, we can still free it on the returned pointer.  Note the reuse
-     * of endp to mean the front of the string buffer now.
-     */
-    endp = str;
-    if( frontp != str )
-    {
-            while( *frontp ) { *endp++ = *frontp++; }
-            *endp = '\0';
-    }
-
-
-    return str;
+    return true;
 }
 
-__global__ void sha256_cuda(JOB ** jobs, int n) {
+__device__ void addNonceToBlock(BLOCK_DATA* myblock,unsigned nonce){
+	
+	for(int i=7;i >= 0 ;i--){
+		unsigned tmp = nonce >> (4*i);
+		tmp &= 0x0f;
+		myblock->data[myblock->size-8+(7-i)] = (10 <= tmp)*('a' + (tmp - 10)) + (10 > tmp)*('0' + tmp);
+
+		
+	}
+
+}
+
+__global__ void sha256_cuda(BLOCK_DATA * block,unsigned nonce_start,unsigned n_zero,bool * f_finish ,unsigned *d_answers) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-	BYTE previous_hash[65];	
+	BYTE previous_hash[64];
+	BYTE double_hash[64];
+	BYTE digest[64];
+	bool get_ans =false;
+	unsigned  nonce= nonce_start + i;
+	BLOCK_DATA myblock;
 
-	// perform sha256 calculation here
-	if (i < n){
+	memcpy(myblock.data,block->data,block->size);
+	myblock.size = block->size + 8;	
+
+	do{
 		SHA256_CTX ctx;
-		sha256_init(&ctx);
-		sha256_update(&ctx, jobs[i]->data, jobs[i]->size);
-		sha256_final(&ctx, jobs[i]->digest);
 		
-		hashStrCpy(previous_hash,jobs[i]->digest);
-		previous_hash[64] = '\n';		
+		addNonceToBlock(&myblock,nonce);		
 
 		sha256_init(&ctx);
-		sha256_update(&ctx, previous_hash , 65);
-		sha256_final(&ctx, jobs[i]->digest);
+		sha256_update(&ctx, myblock.data, myblock.size);
+		sha256_final(&ctx, digest);
+		
+		hashStrCpy(previous_hash,digest);		
+
+		sha256_init(&ctx);
+		sha256_update(&ctx, previous_hash , 64);
+		sha256_final(&ctx, digest);
+
+		hashStrCpy(double_hash,digest);
+
+		get_ans = checkContinuousZeros((char*)double_hash,n_zero);
+
+	}while( get_ans == false && *f_finish == false && (nonce = nonce +THREAD_TOTAL));
+
+	
+	if(*f_finish ==false){
+		*f_finish = true;
+		d_answers[i] = nonce;
 	}
 }
+
 
 void pre_sha256() {
 	// compy symbols
@@ -80,153 +89,58 @@ void pre_sha256() {
 }
 
 
-void runJobs(JOB ** jobs, int n){
-	int blockSize = 4;
-	int numBlocks = (n + blockSize - 1) / blockSize;
-	sha256_cuda <<< numBlocks, blockSize >>> (jobs, n);
-}
+
+// * JOB_init(BYTE * data, long size) {
+//	JOB * j;
+//	checkCudaErrors(cudaMallocManaged(&j, sizeof(JOB)));	//j = (JOB *)malloc(sizeof(JOB));
+//	checkCudaErrors(cudaMallocManaged(&(j->data), size));
+//	j->data = data;
+//	j->size = size;
+//	for (int i = 0; i < 64; i++)
+//	{
+//		j->dige1152 (SM:6)st[i] = 0xff;
+//	}
+//	return j;
+//}
 
 
-JOB * JOB_init(BYTE * data, long size, char * fname) {
-	JOB * j;
-	checkCudaErrors(cudaMallocManaged(&j, sizeof(JOB)));	//j = (JOB *)malloc(sizeof(JOB));
-	checkCudaErrors(cudaMallocManaged(&(j->data), size));
-	j->data = data;
-	j->size = size;
-	for (int i = 0; i < 64; i++)
-	{
-		j->digest[i] = 0xff;
-	}
-	strcpy(j->fname, fname);
-	return j;
-}
+
+int main() {
+	
+	int  i , n;
+	BLOCK_DATA block;
+	int nonce_start = 0;
+	int n_zero = 3;
+	unsigned answers[THREAD_TOTAL];	
+
+	unsigned *d_answers;
+	BLOCK_DATA *d_block;
+	
+	
+	char data[] = "51528210305818912a0c5065e04921ae30a162641517c58dce4d4b4931e8853c5246820fa0d0000000896a97a80e4b869a93706ac86cc1cf8718f59fb5e4ffab78fc79c247e";
+
+	strcpy((char*)(block.data),data);
+	block.size = strlen(data);
+
+	cudaMalloc((void**)&d_block,sizeof(BLOCK_DATA) );
+	cudaMemcpy(d_block,&block,sizeof(BLOCK_DATA),cudaMemcpyHostToDevice);
+	
+	cudaMalloc((void**)&d_answers,sizeof(unsigned)*THREAD_TOTAL);
+	cudaMemset(d_answers,0,sizeof(unsigned)*THREAD_TOTAL); 	
 
 
-BYTE * get_file_data(char * fname, unsigned long * size) {
-	FILE * f = 0;
-	BYTE * buffer = 0;
-	unsigned long fsize = 0;
-
-	f = fopen(fname, "rb");
-	if (!f){
-		fprintf(stderr, "get_file_data Unable to open '%s'\n", fname);
-		return 0;
-	}
-	fflush(f);
-
-	if (fseek(f, 0, SEEK_END)){
-		fprintf(stderr, "Unable to fseek %s\n", fname);
-		return 0;
-	}
-	fflush(f);
-	fsize = ftell(f);
-	rewind(f);
-
-	//buffer = (char *)malloc((fsize+1)*sizeof(char));
-	checkCudaErrors(cudaMallocManaged(&buffer, (fsize+1)*sizeof(char)));
-	fread(buffer, fsize, 1, f);
-	fclose(f);
-	*size = fsize;
-	return buffer;
-}
-
-void print_usage(){
-	printf("Usage: CudaSHA256 [OPTION] [FILE]...\n");
-	printf("Calculate sha256 hash of given FILEs\n\n");
-	printf("OPTIONS:\n");
-	printf("\t-f FILE1 \tRead a list of files (separeted by \\n) from FILE1, output hash for each file\n");
-	printf("\t-h       \tPrint this help\n");
-	printf("\nIf no OPTIONS are supplied, then program reads the content of FILEs and outputs hash for each FILEs \n");
-	printf("\nOutput format:\n");
-	printf("Hash following by two spaces following by file name (same as sha256sum).\n");
-	printf("\nNotes:\n");
-	printf("Calculations are performed on GPU, each seperate file is hashed in its own thread\n");
-}
-
-int main(int argc, char **argv) {
-	int i = 0, n = 0;
-	size_t len;
-	unsigned long temp;
-	char * a_file = 0, * line = 0;
-	BYTE * buff;
-	char option, index;
-	ssize_t read;
-	JOB ** jobs;
-
-	std::string str;
-
-	// parse input
-	while ((option = getopt(argc, argv,"hf:")) != -1)
-		switch (option) {
-			case 'h' :
-				print_usage();
-				break;
-			case 'f' :
-				a_file = optarg;
-				break;
-			default:
-				break;
-		}
-
-
-	if (a_file) {
-		FILE * f = 0;
-		f = fopen(a_file, "r");
-		if (!f){
-			fprintf(stderr, "Unable to open %s\n", a_file);
-			return 0;
-		}
-
-		for (n = 0; getline(&line, &len, f) != -1; n++){}
-		checkCudaErrors(cudaMallocManaged(&jobs, n * sizeof(JOB *)));
-		fseek(f, 0, SEEK_SET);
-
-		n = 0;
-		read = getline(&line, &len, f);
-		while (read != -1) {
-			//printf("%s\n", line);
-			read = getline(&line, &len, f);
-			line = trim(line);
-			buff = get_file_data(line, &temp);
-			jobs[n++] = JOB_init(buff, temp, line);
-		}
-
-		pre_sha256();
-		runJobs(jobs, n);
-
-	} else {
-		// get number of arguments = files = jobs
-		n = argc - optind;
-		if (n > 0){
-
-			checkCudaErrors(cudaMallocManaged(&jobs, n * sizeof(JOB *)));
-
-			// iterate over file list - non optional arguments
-			for (i = 0, index = optind; index < argc; index++, i++){
-				buff = get_file_data(argv[index], &temp);
-				jobs[i] = JOB_init(buff, temp, argv[index]);
-			}
-
-			pre_sha256();
-			runJobs(jobs, n);
-
-//			cudaDeviceSynchronize();
-//			printf("first hash passed\n");
-//			for (i = 0, index = optind; index < argc; index++, i++){
-//				printf("%s  %s\n", hash_to_string(jobs[i]->digest), jobs[i]->fname);
-//				buff = jobs[i]->digest;
-//				str = hash_to_string(buff);
-//				temp = str.size();
-//				jobs[i] = JOB_init(buff, temp, argv[index]);
-//			}
-//			printf("secound hash passed\n");
-//			pre_sha256();
-//			runJobs(jobs, n);
-		}
-	}
+	bool *f_finish;
+	cudaMalloc((void**)&f_finish,sizeof(bool));
+	cudaMemset(f_finish,false,1);
+	sha256_cuda <<< grid_num,block_num  >>> (d_block,nonce_start,n_zero,f_finish,d_answers);
 
 	cudaDeviceSynchronize();
-	print_jobs(jobs, n);
+
+	cudaMemcpy(answers,d_answers,sizeof(unsigned)*THREAD_TOTAL,cudaMemcpyDeviceToHost);
+		
+	for(int i=0;i<THREAD_TOTAL;i++){
+		printf("%x\n",answers[i]);
+	}
 	cudaDeviceReset();
 	return 0;
 }
